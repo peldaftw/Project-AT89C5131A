@@ -5,24 +5,25 @@ jmp main
 ;Externe Interrupt
 ;---------------------------------------------------------------------------------------------
 ;P3.2  level hochzählen
-org 03h			  			
-			anl level,#15
-			jc zuhoch   	;Wenn Level == 15, springe zu zuhoch
-			inc level		;Wenn nicht 15, dann ist es möglich zu inkrementieren
-zuhoch:		clr C
-			ljmp anzeigen
-			reti
+org 03h 
+						mov a,level
+						cjne a,#000Fh,erhoehe
+zurueckerhoehe:			clr C
+						reti
 
-;P3.3  level runterzählen
-org 13h 					
-			anl level,#0
-			jc zuniedrig ;Wenn Level == 0, springe zu zuniedrig
-			dec level		;Wenn nicht 0, dann ist es möglich zu dekrementieren
-zuniedrig:	clr C
-			ljmp anzeigen
-			reti
+
+org 13h 
+						mov a,level
+						cjne a,#0000h,vermindere
+zurueckvermindere:		clr C
+						reti
 ;---------------------------------------------------------------------------------------------
+erhoehe:		inc level
+				ljmp zurueckerhoehe
+vermindere: 	dec level
+				ljmp zurueckvermindere
 
+;---------------------------------------------------------------------------------------------
 
 ;Einsprung (Hauptprogramm)
 main:
@@ -93,7 +94,10 @@ clr C						;Carry bit auf 0 setzen
 SUBB A,level				;Level wird von 10 Abgezogen um die "Aus" Zeit des Ports zu bestimmen allerdings wird das doppelte benötigt (ein durchgang nur 0,06s lang)
 mov zeahlfaktor,A			; anzahl an duchgängen des zählers mal 2
 
+setb tr0 
 call zaehlen
+clr tr0
+
 jmp an
 ;---------------------------------------------------------------------------------------------
 
@@ -106,9 +110,12 @@ mov th0,endwert
 setb C
 mov Ausgabeport,C
 mov A,level					;Akku mit level laden		
-mov zeahlfaktor,A			
-
+mov zeahlfaktor,A
+			
+setb tr0 
 call zaehlen
+clr tr0
+
 jmp aus
 ;---------------------------------------------------------------------------------------------
 
@@ -117,11 +124,11 @@ jmp aus
 ;Überprüfung ob Zähler schon so oft übergelaufen ist wie gewünscht
 ;---------------------------------------------------------------------------------------------
 zaehlen:
-setb tr0 									;Starten von timer
+									;Starten von timer
 mov a,zeahlfaktor							;zeahlfaktor wird geladen(Wie oft Überlaufen soll, wird in akku geladen)
 cjne a,uberlaufzahler,uberlaufcheck			;Akku mit Überlaufzähler vergleichen wenn ungleich sprung nach uberlaufcheck sonst weiter
 mov uberlaufzahler,#00h
-clr tr0
+
 ret										   	;springe zurück zur stelle nach dem zaehlen aufgerufen wurde
 ;---------------------------------------------------------------------------------------------
 
@@ -156,5 +163,6 @@ seg7code:   DB 01111110b,00010010b,10111100b,10110110b
 			DB 01101100b,10011110b,11101100b,11101000b	
 ;---------------------------------------------------------------------------------------------
 
+	
 					
 end	
