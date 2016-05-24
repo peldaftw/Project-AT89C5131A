@@ -6,18 +6,25 @@ jmp main
 ;---------------------------------------------------------------------------------------------
 ;P3.2  level hochzählen
 org 03h 
-						mov a,level
-						cjne a,#000Fh,erhoehe
-zurueckerhoehe:			clr C
-						reti
+	   jmp runter
 
 
 org 13h 
-						mov a,level
+	   jmp hoch
+;---------------------------------------------------------------------------------------------
+hoch:					mov a,level
+						cjne a,#000Fh,erhoehe
+zurueckerhoehe:			clr C
+						call anzeigen
+						reti
+
+runter:					mov a,level
 						cjne a,#0000h,vermindere
 zurueckvermindere:		clr C
+						call anzeigen
 						reti
-;---------------------------------------------------------------------------------------------
+
+
 erhoehe:		inc level
 				ljmp zurueckerhoehe
 vermindere: 	dec level
@@ -52,14 +59,14 @@ uberlaufzahler equ 34h
 
 ;Port zuweisung
 ;---------------------------------------------------------------------------------------------
-Ausgabeport equ p2.0
-AusgabeDisplayport equ p0
+Ausgabeport equ p1.6
+AusgabeDisplayport equ p2
 ;---------------------------------------------------------------------------------------------
 
 
 ;Config (Startwerte für das Programm
 ;---------------------------------------------------------------------------------------------
-mov anfangswert,#1
+mov anfangswert,#252
 mov endwert,#255
 mov level,#0		
 mov uberlaufzahler,#0
@@ -94,9 +101,9 @@ clr C						;Carry bit auf 0 setzen
 SUBB A,level				;Level wird von 10 Abgezogen um die "Aus" Zeit des Ports zu bestimmen allerdings wird das doppelte benötigt (ein durchgang nur 0,06s lang)
 mov zeahlfaktor,A			; anzahl an duchgängen des zählers mal 2
 
-setb tr0 
+
 call zaehlen
-clr tr0
+
 
 jmp an
 ;---------------------------------------------------------------------------------------------
@@ -112,9 +119,8 @@ mov Ausgabeport,C
 mov A,level					;Akku mit level laden		
 mov zeahlfaktor,A
 			
-setb tr0 
 call zaehlen
-clr tr0
+
 
 jmp aus
 ;---------------------------------------------------------------------------------------------
@@ -124,11 +130,11 @@ jmp aus
 ;Überprüfung ob Zähler schon so oft übergelaufen ist wie gewünscht
 ;---------------------------------------------------------------------------------------------
 zaehlen:
-									;Starten von timer
+setb tr0 									;Starten von timer
 mov a,zeahlfaktor							;zeahlfaktor wird geladen(Wie oft Überlaufen soll, wird in akku geladen)
 cjne a,uberlaufzahler,uberlaufcheck			;Akku mit Überlaufzähler vergleichen wenn ungleich sprung nach uberlaufcheck sonst weiter
 mov uberlaufzahler,#00h
-
+clr tr0
 ret										   	;springe zurück zur stelle nach dem zaehlen aufgerufen wurde
 ;---------------------------------------------------------------------------------------------
 
@@ -139,6 +145,7 @@ uberlaufcheck:
 jnb tf0,zaehlen				;Timer Überlauf? wenn nein, springe zu zaehlen
 inc uberlaufzahler
 clr tf0
+
 jmp zaehlen
 ;---------------------------------------------------------------------------------------------
 

@@ -33,7 +33,7 @@ Options 1,0,0  // Target 'Target 1'
  EnvLib ()
  EnvReg (ÿAtmel\)
  OrgReg (ÿAtmel\)
- TgStat=16
+ TgStat=25
  OutDir (.\)
  OutName (Final_v1_23.05.2016)
  GenApp=1
