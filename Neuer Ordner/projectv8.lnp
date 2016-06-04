@@ -1,0 +1,4 @@
+"STARTUP.obj",
+"v8.obj" 
+TO "projectv8" 
+RAMSIZE(256) 
