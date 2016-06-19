@@ -5,24 +5,32 @@ jmp main
 ;Externe Interrupt
 ;---------------------------------------------------------------------------------------------
 ;P3.2  level hochzählen
-org 03h			  			
-			anl level,#15
-			jc zuhoch   	;Wenn Level == 15, springe zu zuhoch
-			inc level		;Wenn nicht 15, dann ist es möglich zu inkrementieren
-zuhoch:		clr C
-			ljmp anzeigen
-			reti
+org 03h 
+	   jmp runter
 
-;P3.3  level runterzählen
-org 13h 					
-			anl level,#0
-			jc zuniedrig ;Wenn Level == 0, springe zu zuniedrig
-			dec level		;Wenn nicht 0, dann ist es möglich zu dekrementieren
-zuniedrig:	clr C
-			ljmp anzeigen
-			reti
+
+org 13h 
+	   jmp hoch
 ;---------------------------------------------------------------------------------------------
+hoch:					mov a,level
+						cjne a,#000Fh,erhoehe
+zurueckerhoehe:			clr C
+						call anzeigen
+						reti
 
+runter:					mov a,level
+						cjne a,#0000h,vermindere
+zurueckvermindere:		clr C
+						call anzeigen
+						reti
+
+
+erhoehe:		inc level
+				ljmp zurueckerhoehe
+vermindere: 	dec level
+				ljmp zurueckvermindere
+
+;---------------------------------------------------------------------------------------------
 
 ;Einsprung (Hauptprogramm)
 main:
@@ -51,14 +59,14 @@ uberlaufzahler equ 34h
 
 ;Port zuweisung
 ;---------------------------------------------------------------------------------------------
-Ausgabeport equ p2.0
-AusgabeDisplayport equ p0
+Ausgabeport equ p1.6
+AusgabeDisplayport equ p2
 ;---------------------------------------------------------------------------------------------
 
 
 ;Config (Startwerte für das Programm
 ;---------------------------------------------------------------------------------------------
-mov anfangswert,#1
+mov anfangswert,#252
 mov endwert,#255
 mov level,#07h		
 mov uberlaufzahler,#0
@@ -93,7 +101,10 @@ clr C						;Carry bit auf 0 setzen
 SUBB A,level				;Level wird von 10 Abgezogen um die "Aus" Zeit des Ports zu bestimmen allerdings wird das doppelte benötigt (ein durchgang nur 0,06s lang)
 mov zeahlfaktor,A			; anzahl an duchgängen des zählers mal 2
 
+
 call zaehlen
+
+
 jmp an
 ;---------------------------------------------------------------------------------------------
 
@@ -106,9 +117,11 @@ mov th0,endwert
 setb C
 mov Ausgabeport,C
 mov A,level					;Akku mit level laden		
-mov zeahlfaktor,A			
-
+mov zeahlfaktor,A
+			
 call zaehlen
+
+
 jmp aus
 ;---------------------------------------------------------------------------------------------
 
@@ -132,6 +145,7 @@ uberlaufcheck:
 jnb tf0,zaehlen				;Timer Überlauf? wenn nein, springe zu zaehlen
 inc uberlaufzahler
 clr tf0
+
 jmp zaehlen
 ;---------------------------------------------------------------------------------------------
 
@@ -156,5 +170,6 @@ seg7code:   DB 01111110b,00010010b,10111100b,10110110b
 			DB 01101100b,10011110b,11101100b,11101000b	
 ;---------------------------------------------------------------------------------------------
 
+	
 					
 end	
